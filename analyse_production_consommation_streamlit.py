@@ -243,10 +243,10 @@ if uploaded_production_file and uploaded_consumption_files:
             st.pyplot(fig)
 
             # Boutons de téléchargement des matrices
+            st.download_button("Télécharger la matrice de données de consommation en CSV", df_consumption_agg.to_csv().encode('utf-8'), file_name='consommation_aggregate.csv', mime='text/csv')
             st.download_button("Télécharger la matrice des clés de répartition en CSV", df_cle_repartition.to_csv().encode('utf-8'), file_name='cle_repartition.csv', mime='text/csv')
             st.download_button("Télécharger la matrice de répartition solaire en CSV", df_result.to_csv().encode('utf-8'), file_name='repartition_solaire.csv', mime='text/csv')
             st.download_button("Télécharger la matrice de surplus en CSV", df_surplus.to_csv().encode('utf-8'), file_name='surplus.csv', mime='text/csv')
             st.download_button("Télécharger la matrice de la partie autoproduite en CSV", df_autoproduite.to_csv().encode('utf-8'), file_name='autoproduite.csv', mime='text/csv')
             st.download_button("Télécharger la matrice de la partie alloproduite en CSV", df_alloproduite.to_csv().encode('utf-8'), file_name='alloproduite.csv', mime='text/csv')
-            st.download_button("Télécharger la matrice de données de consommation en CSV", df_consumption_agg.to_csv().encode('utf-8'), file_name='consommation_aggregate.csv', mime='text/csv')
             st.download_button("Télécharger le tableau des résultats en CSV", transposed_result_data.to_csv().encode('utf-8'), file_name='resultats.csv', mime='text/csv')
