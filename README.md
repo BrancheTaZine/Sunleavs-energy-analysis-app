@@ -23,7 +23,7 @@ Accédez à l'application en ligne : [Sunleavs Energy Analysis App](https://sunl
 
 1. **Charger des fichiers CSV :**
    - Utilisez le téléchargeur de fichiers pour charger vos fichiers CSV de production et de consommation.
-   - L'application détectera automatiquement le format du fichier et analysera les données.
+   - L'application détectera automatiquement le format du fichier et analysera les données ( cela peut prendre 1 à 5 minutes selon votre connexion ).
 
 2. **Voir l'analyse :**
    - L'application affichera les métriques mensuelles et annuelles pour la production, la consommation, le surplus et l'autoproduction d'énergie.
@@ -66,11 +66,13 @@ Pour exécuter l'application localement, suivez ces étapes :
 
 Ce projet est en collaboration avec le LIS de l'université de Toulon.
 
+Projet Sunleavs de INDEWATT.
+
 ## Contact
 
 Pour toute question ou demande, veuillez contacter :
 
 - **Nom :** ROUGERIE
-- **Email :** rougerie.tom2003@gmail.com
+- **Email :** rougerie.tom2003@gmail.com ou tom.rougerie@isen.yncrea.fr
 
-- SUNLEAVS
+
