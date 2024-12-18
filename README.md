@@ -72,7 +72,7 @@ Projet Sunleavs de INDEWATT.
 
 Pour toute question ou demande, veuillez contacter :
 
-- **Nom :** ROUGERIE
+- **Nom :** Tom ROUGERIE
 - **Email :** rougerie.tom2003@gmail.com ou tom.rougerie@isen.yncrea.fr
 
 
