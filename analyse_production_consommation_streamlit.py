@@ -250,3 +250,4 @@ if uploaded_production_file and uploaded_consumption_files:
             st.download_button("Télécharger la matrice de la partie autoproduite en CSV", df_autoproduite.to_csv().encode('utf-8'), file_name='autoproduite.csv', mime='text/csv')
             st.download_button("Télécharger la matrice de la partie alloproduite en CSV", df_alloproduite.to_csv().encode('utf-8'), file_name='alloproduite.csv', mime='text/csv')
             st.download_button("Télécharger le tableau des résultats en CSV", transposed_result_data.to_csv().encode('utf-8'), file_name='resultats.csv', mime='text/csv')
+            
