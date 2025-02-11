@@ -30,52 +30,13 @@ def detect_skiprows(file, encoding, separator):
             file.seek(0)
             return i
 
-def load_flexible_csv(file):
-    """
-    Charge un fichier CSV en s'adaptant aux deux formats :
-    - fichiers simples avec `Horodate` et `Valeur`.
-    - fichiers complexes avec plusieurs colonnes.
-    """
+# Fonction pour charger un fichier CSV avec détection automatique du séparateur et du skiprows
+def load_csv(file):
     encoding = detect_encoding(file)
+    separator = detect_separator(file, encoding)
+    skiprows = detect_skiprows(file, encoding, separator)
     file.seek(0)
-    first_lines = file.read(2000).decode(encoding)  # Lire les premières lignes pour analyse
-    file.seek(0)
-
-    # Détection du séparateur
-    if ";" in first_lines:
-        separator = ";"
-    elif "," in first_lines:
-        separator = ","
-    else:
-        separator = None
-
-    if separator:
-        # Charger le CSV avec le séparateur détecté
-        df = pd.read_csv(file, sep=separator, encoding=encoding)
-    else:
-        raise ValueError("Impossible de détecter un séparateur dans le fichier.")
-
-    # Uniformiser les noms de colonnes en minuscule
-    df.columns = [col.strip().lower() for col in df.columns]
-
-    # Identifier les colonnes importantes
-    horodate_col = next((col for col in df.columns if 'horodate' in col or 'date' in col), None)
-    valeur_col = next((col for col in df.columns if 'valeur' in col or 'w' in col), None)
-
-    # Vérification des colonnes détectées
-    if horodate_col and valeur_col:
-        df = df[[horodate_col, valeur_col]]
-        df.columns = ['Horodate', 'Valeur']
-        # Convertir les dates et les valeurs
-        df['Horodate'] = pd.to_datetime(df['Horodate'], dayfirst=True, errors='coerce')
-        df['Valeur'] = pd.to_numeric(df['Valeur'], errors='coerce')
-        df = df.dropna(subset=['Horodate', 'Valeur'])
-        return df
-    else:
-        raise ValueError(f"Colonnes 'Horodate' et 'Valeur' introuvables. Colonnes disponibles : {df.columns.tolist()}")
-
-
-
+    return pd.read_csv(file, sep=separator, encoding=encoding, skiprows=skiprows)
 
 # Fonction pour parser les dates avec différentes approches
 def parse_date(date_str, year):
@@ -93,41 +54,24 @@ def harmonize_year(date, target_year):
         return date
     return date.replace(year=target_year)
 
+# Fonction pour charger et nettoyer le fichier de production
 def load_production_csv(file, study_year):
     encoding = detect_encoding(file)
+    separator = detect_separator(file, encoding)
+    skiprows = detect_skiprows(file, encoding, separator)
     file.seek(0)
-    
-    # Forcer le séparateur à "," pour éviter les problèmes
-    skiprows = 0
-    for i, line in enumerate(file):
-        decoded_line = line.decode(encoding)  # Décoder la ligne en texte
-        if decoded_line.startswith("time"):
-            skiprows = i
-            break
-    file.seek(0)
-    
-    # Charger le CSV à partir de la bonne ligne
-    df = pd.read_csv(file, sep=",", encoding=encoding, skiprows=skiprows, skip_blank_lines=True)
-    
-    # Vérification des colonnes
-    if 'time' not in df.columns or 'P' not in df.columns:
-        raise ValueError("Les colonnes 'time' et 'P' sont introuvables dans le fichier.")
-    
-    # Extraction des deux colonnes nécessaires
-    df = df[['time', 'P']]
+    df = pd.read_csv(file, sep=separator, decimal='.', skiprows=skiprows, usecols=[0, 1])
+    df.columns = ['time', 'P']
+    df = df[df['time'].str.match(r'\d{8}:\d{4}') == True]
     df['time'] = pd.to_datetime(df['time'], format='%Y%m%d:%H%M', errors='coerce')
-    df['P'] = pd.to_numeric(df['P'], errors='coerce')
-    
-    return df.dropna(subset=['time', 'P'])
-
-
-
+    df['P'] = pd.to_numeric(df['P'], errors='coerce')  # Conversion explicite en numérique
+    return df
 
 # Fonction pour calculer les valeurs mensuelles et annuelles
 def calculate_monthly_and_annual(df, column_name):
     if not pd.api.types.is_datetime64_any_dtype(df.index):
         df.index = pd.to_datetime(df.index, errors='coerce')
-    
+   
     df['Month'] = df.index.month
     monthly_values = df.groupby('Month')[column_name].sum() / 1000  # Conversion en kWh
     total_value = monthly_values.sum()
@@ -142,8 +86,7 @@ if uploaded_production_file and uploaded_consumption_files:
     consumption_data = []
     all_dates = []
     for uploaded_file in uploaded_consumption_files:
-        df = load_flexible_csv(uploaded_file)
-
+        df = load_csv(uploaded_file)
         if df.shape[1] >= 2:
             all_dates.extend(pd.to_datetime(df.iloc[:, 0], dayfirst=True, errors='coerce').dropna().dt.year.tolist())
             column_name = uploaded_file.name.replace('.csv', '')
@@ -162,12 +105,6 @@ if uploaded_production_file and uploaded_consumption_files:
             df_production = load_production_csv(uploaded_production_file, study_year)
 
         if consumption_data:
-
-            for i, df in enumerate(consumption_data):
-                df = df.groupby(df.index).sum()  # Regrouper par index pour éviter les doublons
-                df = df[~df.index.duplicated(keep='first')]  # Supprimer les index dupliqués
-                consumption_data[i] = df
-
             df_consumption_agg = pd.concat(consumption_data, axis=1)
             df_consumption_agg.index = df_consumption_agg.index.to_series().apply(lambda x: parse_date(x, study_year) if isinstance(x, str) else x)
             df_consumption_agg.index = pd.to_datetime(df_consumption_agg.index, errors='coerce')
@@ -242,20 +179,6 @@ if uploaded_production_file and uploaded_consumption_files:
 
             total_autoconsommation = (total_autoproduite / total_production * 100) if total_production > 0 else 0
             total_autoproduction = (total_autoproduite / total_consumption * 100) if total_consumption > 0 else 0
-
-            print("Longueur de monthly_consumption :", len(monthly_consumption))
-            print("Longueur de monthly_production :", len(monthly_production))
-            print("Longueur de monthly_surplus :", len(monthly_surplus.values) if isinstance(monthly_surplus, pd.Series) else "Non défini")
-            print("Longueur de monthly_autoproduite :", len(monthly_autoproduite))
-            print("Longueur de monthly_alloproduite :", len(monthly_alloproduite.values) if isinstance(monthly_alloproduite, pd.Series) else "Non défini")
-            print("Longueur de monthly_autoconsommation :", len(monthly_autoconsommation))
-            print("Longueur de monthly_autoproduction :", len(monthly_autoproduction))
-
-
-
-
-
-
 
             # Création du DataFrame pour les résultats mensuels et annuels
             monthly_data = pd.DataFrame({
